@@ -8,6 +8,7 @@ import FAQsSection from "./Components/Question";
 import TestimonialsSection from "./Components/Testimonioals";
 import ContactSection from "./Components/Contact";
 
+
 function App() {
   return (
     <div className="bg-[#F4F3FE] ">
