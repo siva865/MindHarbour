@@ -16,7 +16,6 @@ const allowedOrigins = [
     "http://localhost:5173"
 ];
 
-// cors connection
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin || allowedOrigins.includes(origin)) {
@@ -63,7 +62,9 @@ const bookingSchema = new mongoose.Schema({
     paid: { type: Boolean, default: false },
     bookingDate: { type: Date, default: Date.now },
 });
-const Booking = mongoose.model("Booking", bookingSchema);
+
+// ✅ Fix duplicate model issue
+const Booking = mongoose.models.Booking || mongoose.model("Booking", bookingSchema);
 
 // ✅ Nodemailer Transporter
 const transporter = nodemailer.createTransport({
@@ -77,7 +78,7 @@ const transporter = nodemailer.createTransport({
 // ✅ Google Sheets Setup
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 const CLIENT_EMAIL = process.env.CLIENT_EMAIL;
-const PRIVATE_KEY = process.env.PRIVATE_KEY
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 async function getGoogleSheetClient() {
     try {
@@ -205,8 +206,7 @@ app.post("/book", async (req, res) => {
                 `,
             });
         } catch (mailError) {
-             console.error("Error inside /book route:", error); 
-            console.error("❌ Email error:", mailError.message);
+            console.error("❌ Email sending error:", mailError.message);
         }
 
         try {
@@ -219,7 +219,7 @@ app.post("/book", async (req, res) => {
                 date,
                 time,
                 service,
-                bookingDate: newBooking.bookingDate
+                bookingDate: newBooking.bookingDate,
             });
         } catch (sheetError) {
             console.error("❌ Sheet append error:", sheetError.message);
