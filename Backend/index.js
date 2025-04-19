@@ -173,7 +173,7 @@ async function appendToGoogleSheet(data) {
 // ✅ Booking API
 app.post("/book", async (req, res) => {
     const { name, email, country, age, phone, date, time, service } = req.body;
-
+    console.log("Received Booking Request:", req.body);
     if (!name || !email || !country) {
         return res.status(400).json({ error: "Required fields missing." });
     }
@@ -205,6 +205,7 @@ app.post("/book", async (req, res) => {
                 `,
             });
         } catch (mailError) {
+             console.error("Error inside /book route:", error); 
             console.error("❌ Email error:", mailError.message);
         }
 
