@@ -11,7 +11,7 @@ dotenv.config();
 const app = express();
 
 // ✅ CORS
-const allowedOrigins = ["http://localhost:3000", "http://localhost:5173"];
+const allowedOrigins = ["https://mindharbour-frontend.onrender.com/", "http://localhost:5173"];
 app.use(
     cors({
         origin: function (origin, callback) {
