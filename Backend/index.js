@@ -12,7 +12,7 @@ const app = express();
 
 // ✅ CORS
 const allowedOrigins = [
-    "https://mindharbour-frontend.onrender.com",
+    "https://mind-harbour.vercel.app/",
     "http://localhost:5173"
 ];
 

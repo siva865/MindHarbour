@@ -94,7 +94,7 @@ function BookingCalendar() {
         };
 
         try {
-            const response = await fetch('https://mindharbour-backend.onrender.com/book', {
+            const response = await fetch('https://mind-harbour-back.vercel.app/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(bookingData),
@@ -129,7 +129,7 @@ function BookingCalendar() {
         console.log("Starting payment polling for bookingId:", bookingId);
         const intervalId = setInterval(async () => {
             try {
-                const response = await fetch(`https://mindharbour-backend.onrender.com/check-payment/${bookingId}`, {
+                const response = await fetch(`https://mind-harbour-back.vercel.app//check-payment/${bookingId}`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' },
                 });
@@ -148,7 +148,7 @@ function BookingCalendar() {
                         console.log("Payment successful!");
 
                         // ➡️ Save to Google Sheets after successful payment
-                        await fetch('https://mindharbour-backend.onrender.com/save-to-sheets', {
+                        await fetch('https://mind-harbour-back.vercel.app//save-to-sheets', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(bookingData),
