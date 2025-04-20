@@ -10,13 +10,13 @@ const { google } = require("googleapis");
 dotenv.config();
 const app = express();
 
-// ✅ CORS Configuration
+// ✅ CORS
 const allowedOrigins = [
     "https://mind-harbour.vercel.app",
-    "http://localhost:5173"
+    "http://localhost:3000"
 ];
 
-const corsOptions = {
+app.use(cors({
     origin: function (origin, callback) {
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
@@ -26,13 +26,7 @@ const corsOptions = {
         }
     },
     credentials: true,
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS", // Explicitly allow all common methods
-    allowedHeaders: "Content-Type,Authorization", // Explicitly allow Content-Type and Authorization (if used)
-};
-
-// Apply CORS middleware globally (you can also apply it per route as shown later)
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Handle preflight requests for all routes
+}));
 
 app.use(express.json());
 

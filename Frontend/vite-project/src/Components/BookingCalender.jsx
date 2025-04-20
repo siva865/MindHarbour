@@ -46,8 +46,8 @@ function BookingCalendar() {
     const [bookingId, setBookingId] = useState(null);
     const [paymentStatus, setPaymentStatus] = useState('pending');
     const [isBooked, setIsBooked] = useState(false);
-    const [paymentTimeoutId, setPaymentTimeoutId] = useState(null);
-    const [upiID, setUpiID] = useState('siranjeevisabapathi@oksbi');
+    const [paymentIntervalId, setPaymentIntervalId] = useState(null);
+    const [upiID] = useState('siranjeevisabapathi@oksbi');
 
     const timeSlots = ['10:00 AM', '2:00 PM', '4:00 PM', '7:00 PM'];
     const services = {
@@ -58,130 +58,101 @@ function BookingCalendar() {
 
     const countries = ['India', 'United States', 'Canada', 'United Kingdom', 'Australia', 'Germany', 'Other'];
     const selectedServiceAmount = services[selectedService]?.amount || 0;
-    const upiLink = `upi://pay?pa=${upiID}&pn=MindHarbour&am=${selectedServiceAmount}&cu=INR`;
     const isIndia = country.toLowerCase() === 'india';
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
+    const backendURL = 'https://mind-harbour-back.vercel.app';
+
     useEffect(() => {
-        setPaymentConfirmed(false);
-        setPaymentStatus('pending');
-        setIsBooked(false);
-        if (paymentTimeoutId) {
-            clearTimeout(paymentTimeoutId);
-        }
-    }, [selectedDate, selectedTime, name, age, email, country, phone, selectedService, isIndia]);
+        return () => {
+            if (paymentIntervalId) clearInterval(paymentIntervalId);
+        };
+    }, [paymentIntervalId]);
 
     const copyUPI = () => {
         navigator.clipboard.writeText(upiID);
-        alert('UPI ID copied!');
+        alert('UPI ID copied to clipboard!');
     };
 
     const handleBooking = async () => {
         if (!selectedDate || !selectedTime || !name || !age || !email || !country || !phone || !selectedService) {
-            alert('Please fill in all details.');
+            alert('Please fill all the fields.');
             return;
         }
 
         const bookingData = {
-            name,
-            age,
-            email,
-            phone,
-            country,
+            name, age, email, phone, country,
             date: selectedDate.toLocaleDateString(),
             time: selectedTime,
             service: services[selectedService]?.label || selectedService,
         };
 
         try {
-            const response = await fetch('https://mind-harbour-back.vercel.app', {
+            const res = await fetch(`${backendURL}/book`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(bookingData),
             });
 
-            const result = await response.json();
-            console.log("Response from /book:", result);
+            const result = await res.json();
+            console.log('Booking Response:', result);
 
-            if (response.ok) {
+            if (res.ok) {
                 setBookingId(result.bookingId);
                 if (result.paymentRequired) {
                     setShowPaymentOptions(true);
-                    startPaymentPolling(result.bookingId, bookingData);
+                    startPolling(result.bookingId, bookingData);
                 } else {
-                    alert("Booking confirmed without payment! We'll contact you soon.");
+                    alert('✅ Booking confirmed without payment!');
                 }
             } else {
                 if (result.booked) {
-                    alert("❌ Time slot is already booked. Please choose a different time.");
+                    alert('❌ Slot already booked. Please pick another.');
                     setIsBooked(true);
                 } else {
-                    alert('❌ Failed to save booking: ' + result.error);
+                    alert('❌ Failed to book: ' + result.error);
                 }
             }
-        } catch (error) {
-            console.error(error);
-            alert('❌ Error occurred while booking: ' + error.message);
+
+        } catch (err) {
+            console.error(err);
+            alert('❌ Server error. Please try again.');
         }
     };
 
-    const startPaymentPolling = (bookingId, bookingData) => {
-        console.log("Starting payment polling for bookingId:", bookingId);
-        const intervalId = setInterval(async () => {
+    const startPolling = (bookingId, bookingData) => {
+        const interval = setInterval(async () => {
             try {
-                const response = await fetch(`https://mind-harbour-back.vercel.app//check-payment/${bookingId}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                });
+                const res = await fetch(`${backendURL}/check-payment/${bookingId}`);
+                const result = await res.json();
+                console.log('Polling Result:', result);
 
-                const result = await response.json();
-                console.log("Response from /check-payment:", result);
-
-                if (response.ok) {
+                if (res.ok) {
                     if (result.paymentSuccess) {
+                        clearInterval(interval);
                         setPaymentConfirmed(true);
                         setPaymentStatus('success');
-                        clearInterval(intervalId);
-                        if (paymentTimeoutId) {
-                            clearTimeout(paymentTimeoutId);
-                        }
-                        console.log("Payment successful!");
 
-                        // ➡️ Save to Google Sheets after successful payment
-                        await fetch('https://mind-harbour-back.vercel.app//save-to-sheets', {
+                        await fetch(`${backendURL}/save-to-sheets`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(bookingData),
                         });
 
-                        alert("✅ Payment successful! Booking confirmed. We'll contact you soon.");
+                        alert('✅ Payment received! We will contact you soon.');
                     } else if (result.paymentFailed) {
+                        clearInterval(interval);
                         setPaymentStatus('failed');
-                        clearInterval(intervalId);
-                        if (paymentTimeoutId) {
-                            clearTimeout(paymentTimeoutId);
-                        }
-                        alert("Payment Failed");
-                        console.log("Payment failed");
+                        alert('❌ Payment failed. Try again.');
                     }
-                } else {
-                    console.error("Error checking payment:", result.error);
                 }
-            } catch (error) {
-                console.error("Error polling payment status:", error);
+            } catch (err) {
+                console.error('Polling Error:', err);
             }
         }, 3000);
 
-        setPaymentTimeoutId(intervalId);
+        setPaymentIntervalId(interval);
     };
-
-    useEffect(() => {
-        return () => {
-            if (paymentTimeoutId) {
-                clearTimeout(paymentTimeoutId);
-            }
-        };
-    }, [paymentTimeoutId]);
 
     return (
         <div className="max-w-lg mx-auto p-8 bg-white rounded-3xl shadow-2xl space-y-6">
@@ -192,11 +163,8 @@ function BookingCalendar() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Select Date</label>
                     <DatePicker
                         selected={selectedDate}
-                        onChange={(date) => {
-                            setSelectedDate(date);
-                            setSelectedTime(null);
-                        }}
-                        className="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                        onChange={(date) => { setSelectedDate(date); setSelectedTime(null); }}
+                        className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 text-sm"
                         placeholderText="Choose a date"
                         minDate={new Date()}
                     />
@@ -211,11 +179,8 @@ function BookingCalendar() {
                                     <button
                                         key={slot}
                                         onClick={() => setSelectedTime(slot)}
-                                        className={`py-2 px-4 rounded-lg text-sm font-semibold transition-all ${selectedTime === slot
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                                            }`}
                                         disabled={isBooked}
+                                        className={`py-2 px-4 rounded-lg text-sm font-semibold ${selectedTime === slot ? 'bg-indigo-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
                                     >
                                         {slot}
                                     </button>
@@ -224,21 +189,19 @@ function BookingCalendar() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <input type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} className="border-gray-300 rounded-lg shadow-sm w-full text-sm p-2" />
-                            <input type="number" placeholder="Age" value={age} onChange={(e) => setAge(e.target.value)} className="border-gray-300 rounded-lg shadow-sm w-full text-sm p-2" />
-                            <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="border-gray-300 rounded-lg shadow-sm w-full text-sm p-2" />
-                            <input type="tel" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="border-gray-300 rounded-lg shadow-sm w-full text-sm p-2" />
-                            <select value={country} onChange={(e) => setCountry(e.target.value)} className="col-span-2 border-gray-300 rounded-lg shadow-sm text-sm p-2">
+                            <input type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} className="border-gray-300 rounded-lg text-sm p-2" />
+                            <input type="number" placeholder="Age" value={age} onChange={(e) => setAge(e.target.value)} className="border-gray-300 rounded-lg text-sm p-2" />
+                            <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="border-gray-300 rounded-lg text-sm p-2" />
+                            <input type="tel" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="border-gray-300 rounded-lg text-sm p-2" />
+                            <select value={country} onChange={(e) => setCountry(e.target.value)} className="col-span-2 border-gray-300 rounded-lg text-sm p-2">
                                 <option value="">-- Select Country --</option>
-                                {countries.map((c) => (
-                                    <option key={c} value={c}>{c}</option>
-                                ))}
+                                {countries.map((c) => <option key={c} value={c}>{c}</option>)}
                             </select>
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Select Service</label>
-                            <select value={selectedService} onChange={(e) => setSelectedService(e.target.value)} className="border-gray-300 rounded-lg shadow-sm text-sm w-full p-2">
+                            <select value={selectedService} onChange={(e) => setSelectedService(e.target.value)} className="border-gray-300 rounded-lg text-sm p-2 w-full">
                                 <option value="">-- Choose Service --</option>
                                 {Object.entries(services).map(([key, val]) => (
                                     <option key={key} value={key}>{val.label}</option>
@@ -250,21 +213,20 @@ function BookingCalendar() {
                             <div className="mt-6 space-y-4 text-center">
                                 {isIndia ? (
                                     isMobile ? (
-                                        <a href={upiLink} className="block bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">
+                                        <a href={`upi://pay?pa=${upiID}&pn=MindHarbour&am=${selectedServiceAmount}&cu=INR`} className="block bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">
                                             Pay ₹{selectedServiceAmount} via Google Pay
                                         </a>
                                     ) : (
                                         <UPIPaymentPC amount={selectedServiceAmount} upiID={upiID} copyUPI={copyUPI} isPaid={paymentConfirmed} />
                                     )
                                 ) : (
-                                    <p className="text-sm text-gray-600">
-                                        Payment options for countries other than India are not yet supported.
-                                    </p>
+                                    <p className="text-sm text-gray-600">Payment from outside India is not supported yet.</p>
                                 )}
+
                                 <p className="text-sm text-gray-600">
-                                    {paymentStatus === 'pending' && "Awaiting Payment Confirmation..."}
-                                    {paymentStatus === 'success' && "✅ Payment successful! Booking confirmed."}
-                                    {paymentStatus === 'failed' && "❌ Payment Failed. Please try again."}
+                                    {paymentStatus === 'pending' && 'Awaiting Payment Confirmation...'}
+                                    {paymentStatus === 'success' && '✅ Payment successful!'}
+                                    {paymentStatus === 'failed' && '❌ Payment failed.'}
                                 </p>
                             </div>
                         )}
