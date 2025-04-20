@@ -94,7 +94,7 @@ function BookingCalendar() {
         };
 
         try {
-            const response = await fetch('https://mind-harbour-back.vercel.app/', {
+            const response = await fetch('https://mind-harbour-back.vercel.app', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(bookingData),
