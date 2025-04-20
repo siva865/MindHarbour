@@ -12,7 +12,7 @@ const app = express();
 
 // ✅ CORS
 const allowedOrigins = [
-    "https://mind-harbour.vercel.app/",
+    "https://mind-harbour.vercel.app",
     "http://localhost:5173"
 ];
 
@@ -63,7 +63,6 @@ const bookingSchema = new mongoose.Schema({
     bookingDate: { type: Date, default: Date.now },
 });
 
-// ✅ Fix duplicate model issue
 const Booking = mongoose.models.Booking || mongoose.model("Booking", bookingSchema);
 
 // ✅ Nodemailer Transporter
@@ -101,9 +100,7 @@ async function getGoogleSheetClient() {
 async function appendToGoogleSheet(data) {
     const sheets = await getGoogleSheetClient();
     const bookingDateObj = new Date(data.bookingDate);
-    const formattedBookingDate = bookingDateObj.toLocaleString("en-IN", {
-        timeZone: "Asia/Kolkata",
-    });
+    const formattedBookingDate = bookingDateObj.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
 
     const monthNames = [
         "January", "February", "March", "April", "May", "June",
@@ -126,9 +123,7 @@ async function appendToGoogleSheet(data) {
     ]];
 
     try {
-        const sheetMetadata = await sheets.spreadsheets.get({
-            spreadsheetId: SPREADSHEET_ID,
-        });
+        const sheetMetadata = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
 
         const sheetExists = sheetMetadata.data.sheets.some(
             (sheet) => sheet.properties.title === dynamicSheetName
@@ -139,9 +134,7 @@ async function appendToGoogleSheet(data) {
             await sheets.spreadsheets.batchUpdate({
                 spreadsheetId: SPREADSHEET_ID,
                 requestBody: {
-                    requests: [{
-                        addSheet: { properties: { title: dynamicSheetName } }
-                    }],
+                    requests: [{ addSheet: { properties: { title: dynamicSheetName } } }],
                 },
             });
 
@@ -236,14 +229,12 @@ app.post("/book", async (req, res) => {
     }
 });
 
-// ✅ Payment Simulation
+// ✅ Payment APIs
 app.post("/simulate-payment/:id", async (req, res) => {
     const { success } = req.body;
     try {
         const booking = await Booking.findById(req.params.id);
-        if (!booking) {
-            return res.status(404).json({ error: "Booking not found" });
-        }
+        if (!booking) return res.status(404).json({ error: "Booking not found" });
 
         if (success) {
             booking.paid = true;
@@ -258,7 +249,6 @@ app.post("/simulate-payment/:id", async (req, res) => {
     }
 });
 
-// ✅ Check Payment
 app.get("/check-payment/:id", async (req, res) => {
     try {
         const booking = await Booking.findById(req.params.id);
@@ -271,14 +261,10 @@ app.get("/check-payment/:id", async (req, res) => {
     }
 });
 
-// ✅ Admin: Mark as Paid
+// ✅ Admin APIs
 app.post("/mark-paid/:id", async (req, res) => {
     try {
-        const booking = await Booking.findByIdAndUpdate(
-            req.params.id,
-            { paid: true },
-            { new: true }
-        );
+        const booking = await Booking.findByIdAndUpdate(req.params.id, { paid: true }, { new: true });
         if (!booking) return res.status(404).json({ error: "Booking not found" });
 
         res.json({ message: "Booking marked as paid", booking });
@@ -288,14 +274,9 @@ app.post("/mark-paid/:id", async (req, res) => {
     }
 });
 
-// ✅ Admin: Mark as Failed
 app.post("/mark-failed/:id", async (req, res) => {
     try {
-        const booking = await Booking.findByIdAndUpdate(
-            req.params.id,
-            { paid: false },
-            { new: true }
-        );
+        const booking = await Booking.findByIdAndUpdate(req.params.id, { paid: false }, { new: true });
         if (!booking) return res.status(404).json({ error: "Booking not found" });
 
         res.json({ message: "Booking marked as failed", booking });
