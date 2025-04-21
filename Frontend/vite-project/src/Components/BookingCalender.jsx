@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import toast, { Toaster } from 'react-hot-toast'; // ✅ Added toast
 
 const UPIPaymentPC = ({ amount, upiID, isPaid, copyUPI }) => {
     const upiLink = `upi://pay?pa=${upiID}&pn=MindHarbour&am=${amount}&cu=INR`;
@@ -58,11 +59,10 @@ function BookingCalendar() {
 
     const countries = ['India', 'United States', 'Canada', 'United Kingdom', 'Australia', 'Germany', 'Other'];
     const selectedServiceAmount = services[selectedService]?.amount || 0;
-    const isIndia = country.toLowerCase() === 'india';
+    const isIndia = country?.toLowerCase() === 'india';
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    const backendURL = 'https://mind-harbour-back.vercel.app';
-
+    const backendURL = "http://localhost:5000";
 
     useEffect(() => {
         return () => {
@@ -70,14 +70,22 @@ function BookingCalendar() {
         };
     }, [paymentIntervalId]);
 
+    useEffect(() => {
+        const confirmed = localStorage.getItem('paymentConfirmed');
+        if (confirmed === 'true') {
+            setPaymentConfirmed(true);
+            setPaymentStatus('success');
+        }
+    }, []);
+
     const copyUPI = () => {
         navigator.clipboard.writeText(upiID);
-        alert('UPI ID copied to clipboard!');
+        toast.success('✅ UPI ID copied!');
     };
 
     const handleBooking = async () => {
         if (!selectedDate || !selectedTime || !name || !age || !email || !country || !phone || !selectedService) {
-            alert('Please fill all the fields.');
+            toast.error('❌ Please fill all the fields.');
             return;
         }
 
@@ -104,27 +112,27 @@ function BookingCalendar() {
                     setShowPaymentOptions(true);
                     startPolling(result.bookingId, bookingData);
                 } else {
-                    alert('✅ Booking confirmed without payment!');
+                    toast.success('✅ Booking confirmed without payment!');
                 }
             } else {
                 if (result.booked) {
-                    alert('❌ Slot already booked. Please pick another.');
+                    toast.error('❌ Slot already booked. Please pick another.');
                     setIsBooked(true);
                 } else {
-                    alert('❌ Failed to book: ' + result.error);
+                    toast.error('❌ Failed to book: ' + result.error);
                 }
             }
 
         } catch (err) {
             console.error(err);
-            alert('❌ Server error. Please try again.');
+            toast.error('❌ Server error. Please try again.');
         }
     };
 
     const startPolling = (bookingId, bookingData) => {
         const interval = setInterval(async () => {
             try {
-                const res = await fetch(`${backendURL}/check-payment/${bookingId}`);
+                const res = await fetch(`${"http://localhost:5000"}/check-payment/${bookingId}`);
                 const result = await res.json();
                 console.log('Polling Result:', result);
 
@@ -133,6 +141,7 @@ function BookingCalendar() {
                         clearInterval(interval);
                         setPaymentConfirmed(true);
                         setPaymentStatus('success');
+                        localStorage.setItem('paymentConfirmed', 'true');
 
                         await fetch(`${backendURL}/save-to-sheets`, {
                             method: 'POST',
@@ -140,11 +149,11 @@ function BookingCalendar() {
                             body: JSON.stringify(bookingData),
                         });
 
-                        alert('✅ Payment received! We will contact you soon.');
+                        toast.success('✅ Payment received! We will contact you soon.');
                     } else if (result.paymentFailed) {
                         clearInterval(interval);
                         setPaymentStatus('failed');
-                        alert('❌ Payment failed. Try again.');
+                        toast.error('❌ Payment failed. Try again.');
                     }
                 }
             } catch (err) {
@@ -157,6 +166,7 @@ function BookingCalendar() {
 
     return (
         <div className="max-w-lg mx-auto p-8 bg-white rounded-3xl shadow-2xl space-y-6">
+            <Toaster position="top-center" reverseOrder={false} /> {/* ✅ Add toaster */}
             <h2 className="text-2xl font-bold text-center text-gray-800">Book Your Session</h2>
 
             <div className="space-y-4">
@@ -232,13 +242,15 @@ function BookingCalendar() {
                             </div>
                         )}
 
-                        <button
-                            onClick={handleBooking}
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg"
-                            disabled={showPaymentOptions || paymentConfirmed || isBooked}
-                        >
-                            Confirm Booking
-                        </button>
+                        {!paymentConfirmed && (
+                            <button
+                                onClick={handleBooking}
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg"
+                                disabled={showPaymentOptions || isBooked}
+                            >
+                                Confirm Booking
+                            </button>
+                        )}
                     </>
                 )}
             </div>

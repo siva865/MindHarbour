@@ -9,32 +9,28 @@ const { google } = require("googleapis");
 // ✅ Load environment variables
 dotenv.config();
 const app = express();
-
-// ✅ CORS
 const allowedOrigins = [
-    "https://mind-harbour.vercel.app",
-    "http://localhost:3000"
+  "http://localhost:3000",
+  "https://mind-harbour.vercel.app"
 ];
 
 app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            console.error(`❌ Blocked by CORS: ${origin}`);
-            callback(new Error("Not allowed by CORS"));
-        }
-    },
-    methods: "GET,POST,PUT,DELETE,OPTIONS",
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: "GET,POST,PUT,DELETE,OPTIONS",
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
 }));
 
-// ✅ Handle preflight requests
-app.options("*", cors());
 
 // ✅ Middleware
 app.use(express.json());
+
 
 // ✅ MongoDB Connection
 const connectDB = async () => {
