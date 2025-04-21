@@ -164,6 +164,15 @@ function BookingCalendar() {
         setPaymentIntervalId(interval);
     };
 
+    const handleMobilePayment = () => {
+        if (isMobile && isIndia) {
+            const paymentLink = `upi://pay?pa=${upiID}&pn=MindHarbour&am=${selectedServiceAmount}&cu=INR`;
+            window.location.href = paymentLink; // Redirect to Google Pay/PhonePe
+        } else {
+            toast.error('❌ Payment from outside India or on unsupported devices is not possible yet.');
+        }
+    };
+
     return (
         <div className="max-w-lg mx-auto p-8 bg-white rounded-3xl shadow-2xl space-y-6">
             <Toaster position="top-center" reverseOrder={false} /> {/* ✅ Add toaster */}
@@ -222,16 +231,15 @@ function BookingCalendar() {
 
                         {showPaymentOptions && (
                             <div className="mt-6 space-y-4 text-center">
-                                {isIndia ? (
-                                    isMobile ? (
-                                        <a href={`upi://pay?pa=${upiID}&pn=MindHarbour&am=${selectedServiceAmount}&cu=INR`} className="block bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">
-                                            Pay ₹{selectedServiceAmount} via Google Pay
-                                        </a>
-                                    ) : (
-                                        <UPIPaymentPC amount={selectedServiceAmount} upiID={upiID} copyUPI={copyUPI} isPaid={paymentConfirmed} />
-                                    )
+                                {isIndia && isMobile ? (
+                                    <button
+                                        onClick={handleMobilePayment}
+                                        className="block bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg"
+                                    >
+                                        Pay ₹{selectedServiceAmount} via Google Pay
+                                    </button>
                                 ) : (
-                                    <p className="text-sm text-gray-600">Payment from outside India is not supported yet.</p>
+                                    <UPIPaymentPC amount={selectedServiceAmount} upiID={upiID} copyUPI={copyUPI} isPaid={paymentConfirmed} />
                                 )}
 
                                 <p className="text-sm text-gray-600">
