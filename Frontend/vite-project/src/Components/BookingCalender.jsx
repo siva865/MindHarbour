@@ -62,7 +62,7 @@ function BookingCalendar() {
     const isIndia = country?.toLowerCase() === 'india';
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    const backendURL = "http://localhost:5000";
+    const backendURL = "https://mind-harbour-back.vercel.app/";
 
     useEffect(() => {
         return () => {
@@ -132,7 +132,7 @@ function BookingCalendar() {
     const startPolling = (bookingId, bookingData) => {
         const interval = setInterval(async () => {
             try {
-                const res = await fetch(`${"http://localhost:5000"}/check-payment/${bookingId}`);
+                const res = await fetch(`${backendURL}/check-payment/${bookingId}`);
                 const result = await res.json();
                 console.log('Polling Result:', result);
 
