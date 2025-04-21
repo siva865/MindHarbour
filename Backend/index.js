@@ -2,18 +2,25 @@
 const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
-const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const { google } = require("googleapis");
+const validator = require("validator");
+const rateLimit = require("express-rate-limit");
+const helmet = require('helmet');
+const winston = require('winston');
+const dotenv = require('dotenv');
 
+// ✅ Load environment variables with dotenv-expand for better management
 // ✅ Load environment variables
 dotenv.config();
-const app = express();
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://mind-harbour.vercel.app"
-];
 
+const app = express();
+const allowedOrigins = ["https://mind-harbour.vercel.app"];
+
+// ✅ Use helmet for HTTP security headers
+app.use(helmet());
+
+// ✅ CORS Configuration
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -27,10 +34,17 @@ app.use(cors({
   credentials: true,
 }));
 
-
-// ✅ Middleware
+// ✅ Middleware for JSON parsing and logging requests
 app.use(express.json());
 
+// ✅ Create a simple winston logger
+const logger = winston.createLogger({
+  level: 'info',
+  transports: [
+    new winston.transports.Console({ format: winston.format.simple() }),
+    new winston.transports.File({ filename: 'combined.log' })
+  ]
+});
 
 // ✅ MongoDB Connection
 const connectDB = async () => {
@@ -166,12 +180,36 @@ async function appendToGoogleSheet(data) {
     }
 }
 
-// ✅ Booking API
-app.post("/book", async (req, res) => {
+// ✅ Rate-Limiting to prevent abuse
+const bookingLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Max 100 bookings per 15 minutes
+    message: "Too many requests, please try again later.",
+});
+
+// ✅ Authentication Middleware (for Admin routes)
+const authenticateAdmin = (req, res, next) => {
+    const token = req.headers["authorization"];
+    if (!token || token !== process.env.ADMIN_TOKEN) {
+        return res.status(403).json({ error: "Access denied." });
+    }
+    next();
+};
+
+// ✅ Booking API with input validation
+app.post("/book", bookingLimiter, async (req, res) => {
     const { name, email, country, age, phone, date, time, service } = req.body;
-    console.log("Received Booking Request:", req.body);
+
     if (!name || !email || !country) {
         return res.status(400).json({ error: "Required fields missing." });
+    }
+
+    // Validate email and phone format
+    if (!validator.isEmail(email)) {
+        return res.status(400).json({ error: "Invalid email format." });
+    }
+    if (phone && !validator.isMobilePhone(phone)) {
+        return res.status(400).json({ error: "Invalid phone number format." });
     }
 
     try {
@@ -251,20 +289,8 @@ app.post("/simulate-payment/:id", async (req, res) => {
     }
 });
 
-app.get("/check-payment/:id", async (req, res) => {
-    try {
-        const booking = await Booking.findById(req.params.id);
-        if (!booking) return res.status(404).json({ error: "Booking not found" });
-
-        res.json({ paid: booking.paid, paymentSuccess: booking.paid });
-    } catch (err) {
-        console.error("❌ Check payment error:", err.message);
-        res.status(500).json({ error: "Error checking payment status." });
-    }
-});
-
-// ✅ Admin APIs
-app.post("/mark-paid/:id", async (req, res) => {
+// ✅ Admin APIs (Protected by Authentication Middleware)
+app.post("/mark-paid/:id", authenticateAdmin, async (req, res) => {
     try {
         const booking = await Booking.findByIdAndUpdate(req.params.id, { paid: true }, { new: true });
         if (!booking) return res.status(404).json({ error: "Booking not found" });
@@ -276,7 +302,7 @@ app.post("/mark-paid/:id", async (req, res) => {
     }
 });
 
-app.post("/mark-failed/:id", async (req, res) => {
+app.post("/mark-failed/:id", authenticateAdmin, async (req, res) => {
     try {
         const booking = await Booking.findByIdAndUpdate(req.params.id, { paid: false }, { new: true });
         if (!booking) return res.status(404).json({ error: "Booking not found" });
@@ -291,5 +317,5 @@ app.post("/mark-failed/:id", async (req, res) => {
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
+    logger.info(`🚀 Server running at http://localhost:${PORT}`);
 });

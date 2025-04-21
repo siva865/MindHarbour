@@ -62,7 +62,7 @@ function BookingCalendar() {
     const isIndia = country?.toLowerCase() === 'india';
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    const backendURL = "https://mind-harbour-back.vercel.app/";
+    const backendURL = "https://mind-harbour-back.vercel.app";
 
     useEffect(() => {
         return () => {
