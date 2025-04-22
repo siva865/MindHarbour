@@ -1,8 +1,10 @@
+// Header.jsx
+
 import React, { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-function Header() {
+function Header({ onBookSession }) {
   const [isOpen, setIsOpen] = useState(false);
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -17,17 +19,22 @@ function Header() {
         <div className="flex justify-between items-center h-16">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Mind Harbour</h1>
 
-         
+          {/* Desktop Nav */}
           <nav className="hidden md:flex space-x-6 text-gray-700 font-medium">
             <a href="#Hero" className="hover:text-blue-600">Home</a>
             <a href="#Services" className="hover:text-blue-600">Services</a>
             <a href="#AboutMe" className="hover:text-blue-600">About Us</a>
-            <a href="#book" className="hover:text-blue-600">Book a session</a>
+            <button 
+              onClick={onBookSession} 
+              className="hover:text-blue-600 focus:outline-none"
+            >
+              Book a session
+            </button>
             <a href="#ContactForm" className="hover:text-blue-600">Contact Us</a>
             <a href="#FAQsSection" className="hover:text-blue-600">FAQs</a>
           </nav>
 
-       
+          {/* Mobile Hamburger */}
           <div className="md:hidden">
             <button onClick={toggleMenu} className="text-gray-800 focus:outline-none">
               <Menu size={24} />
@@ -36,7 +43,7 @@ function Header() {
         </div>
       </div>
 
-      {/* Mobile Navbar (no background overlay) */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -46,7 +53,7 @@ function Header() {
             animate="open"
             exit="closed"
           >
-            {/* X Button */}
+            {/* Close X Button */}
             <button
               onClick={toggleMenu}
               className="absolute top-4 right-4 text-gray-700"
@@ -56,12 +63,20 @@ function Header() {
 
             {/* Mobile Nav Links */}
             <nav className="flex flex-col space-y-6 text-black font-semibold text-lg">
-              <a href="#Hero">Home</a>
-              <a href="#Services">Services</a>
-              <a href="#AboutMe">About Us</a>
-              <a href="#book">Book a session</a>
-              <a href="#ContactForm">Contact Us</a>
-              <a href="#FAQsSection">FAQs</a>
+              <a href="#Hero" onClick={toggleMenu}>Home</a>
+              <a href="#Services" onClick={toggleMenu}>Services</a>
+              <a href="#AboutMe" onClick={toggleMenu}>About Us</a>
+              <button 
+                onClick={() => {
+                  toggleMenu();
+                  onBookSession();
+                }}
+                className="text-left"
+              >
+                Book a session
+              </button>
+              <a href="#ContactForm" onClick={toggleMenu}>Contact Us</a>
+              <a href="#FAQsSection" onClick={toggleMenu}>FAQs</a>
             </nav>
           </motion.div>
         )}
@@ -73,7 +88,12 @@ function Header() {
           <a href="#Hero" className="hover:text-blue-600">Home</a>
           <a href="#Services" className="hover:text-blue-600">Services</a>
           <a href="#AboutMe" className="hover:text-blue-600">About Us</a>
-          <a href="#book" className="hover:text-blue-600">Book a session</a>
+          <button 
+            onClick={onBookSession} 
+            className="hover:text-blue-600 focus:outline-none"
+          >
+            Book a session
+          </button>
           <a href="#ContactForm" className="hover:text-blue-600">Contact Us</a>
           <a href="#FAQsSection" className="hover:text-blue-600">FAQs</a>
         </div>

@@ -4,13 +4,40 @@ import {
     FaUserAlt,
     FaHeart,
     FaChild,
-    FaUsers,
-    FaExclamationCircle,
-    FaLeaf,
 } from 'react-icons/fa';
 
+// --- Modal Component ---
+const Modal = ({ isOpen, onClose, title, content }) => {
+    if (!isOpen) return null;
+
+    return (
+        <motion.div
+            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+        >
+            <motion.div
+                className="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl relative"
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.8 }}
+            >
+                <button
+                    onClick={onClose}
+                    className="absolute top-3 right-4 text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                    ×
+                </button>
+                <h2 className="text-3xl font-bold mb-4 text-[#302b63]">{title}</h2>
+                <p className="text-gray-700 whitespace-pre-line">{content}</p>
+            </motion.div>
+        </motion.div>
+    );
+};
+
 // --- Helper Components ---
-const FancyServiceCard = ({ icon: Icon, title, description, bgFrom, bgTo }) => {
+const FancyServiceCard = ({ icon: Icon, title, description, bgFrom, bgTo, onLearnMore }) => {
     const [isHovered, setIsHovered] = useState(false);
 
     return (
@@ -37,15 +64,16 @@ const FancyServiceCard = ({ icon: Icon, title, description, bgFrom, bgTo }) => {
             </p>
             <AnimatePresence>
                 {isHovered && (
-                    <motion.div
+                    <motion.button
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 20 }}
                         transition={{ duration: 0.4 }}
                         className="absolute bottom-4 right-4 bg-[#5C6AC4] text-white px-3 py-1 rounded-full text-xs font-medium shadow-md"
+                        onClick={onLearnMore}
                     >
                         Learn More
-                    </motion.div>
+                    </motion.button>
                 )}
             </AnimatePresence>
         </motion.div>
@@ -55,6 +83,9 @@ const FancyServiceCard = ({ icon: Icon, title, description, bgFrom, bgTo }) => {
 // --- Main Component ---
 export function Services() {
     const [isMobile, setIsMobile] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalTitle, setModalTitle] = useState('');
+    const [modalContent, setModalContent] = useState('');
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -71,77 +102,51 @@ export function Services() {
         {
             icon: FaUserAlt,
             title: 'Individual Therapy',
-            description: 'Personalized 1-on-1 sessions for emotional wellness.',
+            description: 'Personalized therapy sessions to help you overcome challenges and improve mental well-being.',
+            details: `Individual therapy provides a confidential, supportive space to explore your thoughts, feelings, and behaviors. Whether you're dealing with anxiety, depression, grief, or stress, our therapy sessions are designed to help you navigate life’s challenges.
+
+We work together to understand the root causes of your struggles, develop coping strategies, and empower you with the tools you need to live a balanced and fulfilling life. We use evidence-based techniques to tailor each session to your unique needs, helping you make meaningful progress toward healing and personal growth.`,
             bgFrom: 'from-blue-200',
             bgTo: 'to-purple-200',
         },
         {
             icon: FaHeart,
             title: 'Couples Counseling',
-            description: 'Helping partners build connection and trust.',
+            description: 'Improve communication, resolve conflicts, and strengthen your relationship with couples counseling.',
+            details: `Couples counseling is designed to help partners address conflicts, improve communication, and rebuild trust. Whether you're dealing with relationship challenges, parenting differences, or simply wanting to deepen your emotional connection, our counseling sessions offer a supportive environment for both partners.
+
+We’ll guide you through identifying patterns of behavior, understanding each other’s needs, and finding constructive solutions to strengthen your relationship. Our goal is to empower you to create a healthier, more fulfilling relationship built on mutual understanding, respect, and love.`,
             bgFrom: 'from-pink-200',
             bgTo: 'to-red-200',
         },
         {
             icon: FaChild,
-            title: 'Child & Adolescent Support',
-            description: 'Specialized care for young minds.',
+            title: 'Parenting Coaching',
+            description: 'Practical strategies to help you build stronger, positive relationships with your children.',
+            details: `Parenting coaching is for parents seeking support in building effective communication, setting healthy boundaries, and fostering positive behavior. Whether you're raising toddlers or teens, our coaching services are designed to offer practical tools and strategies to address specific parenting challenges.
+
+From managing sibling rivalry to guiding your child through emotional development, our coaching will help you approach parenting with confidence and compassion. Together, we will create personalized action plans to enhance your parenting skills and improve your family dynamics, all while reducing stress and strengthening your emotional connection with your child.`,
             bgFrom: 'from-green-200',
             bgTo: 'to-yellow-200',
         },
-        {
-            icon: FaUsers,
-            title: 'Group Therapy',
-            description: 'Supportive group sessions for shared experiences.',
-            bgFrom: 'from-orange-200',
-            bgTo: 'to-amber-200',
-        },
-        {
-            icon: FaExclamationCircle,
-            title: 'Crisis Intervention',
-            description: 'Immediate support during mental health crises.',
-            bgFrom: 'from-red-300',
-            bgTo: 'to-rose-300',
-        },
-        {
-            icon: FaLeaf,
-            title: 'Holistic Wellness',
-            description: 'Integrative approach to mental health.',
-            bgFrom: 'from-teal-200',
-            bgTo: 'to-emerald-200',
-        },
     ];
 
+    const openModal = (title, content) => {
+        setModalTitle(title);
+        setModalContent(content);
+        setModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setModalOpen(false);
+    };
+
     return (
-        <section className="py-20 px-6 md:px-12 bg-gray-50"   style={{ backgroundColor: '#D1F2EB' }} id='Services'>
+        <section className="py-20 px-6 md:px-12 bg-gray-50" style={{ backgroundColor: '#D1F2EB' }} id="Services">
             <div className="max-w-6xl mx-auto">
                 <h2 className="text-4xl md:text-5xl font-bold text-center mb-12 text-[#302b63] drop-shadow-lg">
                     Our Services
                 </h2>
-
-                {/* Why Mind Harbour Section */}
-                <div className="mb-16">
-                    <h3 className="text-3xl font-bold text-center text-[#302b63] mb-6">Why Mind Harbour?</h3>
-                    <p className="text-center text-gray-700 max-w-3xl mx-auto mb-8">
-                        At Mind Harbour, we provide a safe, comforting space for those seeking mental health support.
-                        We offer personalized therapy, workshops, and mental health resources. Whether you're navigating
-                        stress, anxiety, depression, or other concerns, we're here to help you heal, grow, and thrive.
-                    </p>
-                    <ul className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto text-gray-800 text-base">
-                        <li className="bg-white p-4 rounded-xl shadow-md border border-gray-100">
-                            <strong className="text-[#302b63]">Confidentiality Guaranteed:</strong> Your privacy is our top priority.
-                        </li>
-                        <li className="bg-white p-4 rounded-xl shadow-md border border-gray-100">
-                            <strong className="text-[#302b63]">Expert Therapists:</strong> Experienced professionals providing compassionate care.
-                        </li>
-                        <li className="bg-white p-4 rounded-xl shadow-md border border-gray-100">
-                            <strong className="text-[#302b63]">Comprehensive Services:</strong> Therapy, workshops, and mental health products.
-                        </li>
-                        <li className="bg-white p-4 rounded-xl shadow-md border border-gray-100">
-                            <strong className="text-[#302b63]">Flexible Online Sessions:</strong> Accessible from the comfort of your home.
-                        </li>
-                    </ul>
-                </div>
 
                 {/* Services Grid */}
                 <div className={isMobile ? "grid grid-cols-1 gap-6" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"}>
@@ -153,9 +158,22 @@ export function Services() {
                             description={service.description}
                             bgFrom={service.bgFrom}
                             bgTo={service.bgTo}
+                            onLearnMore={() => openModal(service.title, service.details)}
                         />
                     ))}
                 </div>
+
+                {/* Modal */}
+                <AnimatePresence>
+                    {modalOpen && (
+                        <Modal
+                            isOpen={modalOpen}
+                            onClose={closeModal}
+                            title={modalTitle}
+                            content={modalContent}
+                        />
+                    )}
+                </AnimatePresence>
             </div>
         </section>
     );
